@@ -1,7 +1,7 @@
 import pandas as pd
 import requests as r
 import json
-import time as t
+import time
 import sqlite3
 
 db = sqlite3.connect("cache.db")
@@ -30,6 +30,7 @@ def get_facebook_data(link):
     d = c.fetchone()
     if (not (d is None)):
         result = {u'normalized_url': d[1], u'click_count': d[2], u'total_count': d[3], u'comment_count': d[4], u'like_count': d[5], u'share_count': d[6]}
+        print "From cache " + str(result)
         return result
 
     data = r.get("https://api.facebook.com/method/fql.query?query=select%20total_count,like_count,comment_count,share_count,click_count,normalized_url%20from%20link_stat%20where%20url=%27"+ link + "%27&format=json")
@@ -43,6 +44,7 @@ def get_facebook_data(link):
                row['like_count'],
                row['share_count']))
     db.commit()
+    time.sleep(1)
     print ("Inserted into cache: " + str(row))
     return row
 
@@ -64,7 +66,6 @@ def fb_data_getter(df, column_name, new_data_column_append):
             normalized_url.append(json_obj['normalized_url'])
             share_count.append(json_obj['share_count'])
             special.append(0)
-            t.sleep(1)
         else:
             total_count.append("")
             click_count.append('')
@@ -81,8 +82,6 @@ def fb_data_getter(df, column_name, new_data_column_append):
     df['share_count'+new_data_column_append] = share_count
     df['normalized_url'+new_data_column_append] = normalized_url
     return df
-
-
 
 def data_creator(upworthy):
     upworthy2 = fb_data_getter(upworthy, "org_link", "base")
