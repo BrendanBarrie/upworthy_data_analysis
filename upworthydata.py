@@ -34,19 +34,22 @@ def get_facebook_data(link):
         return result
 
     data = r.get("https://api.facebook.com/method/fql.query?query=select%20total_count,like_count,comment_count,share_count,click_count,normalized_url%20from%20link_stat%20where%20url=%27"+ link + "%27&format=json")
-    row = data.json()[0]
-    c.execute("INSERT INTO facebook_link_data (url, normalized_url, click_count, total_count, comment_count, like_count, share_count) VALUES (?,?,?,?,?,?,?);",
-              (link,
-               row['normalized_url'],
-               row['click_count'],
-               row['total_count'],
-               row['comment_count'],
-               row['like_count'],
-               row['share_count']))
-    db.commit()
-    time.sleep(1)
-    print ("Inserted into cache: " + str(row))
-    return row
+    time.sleep(0.5)
+    if len(data.json()) == 1:
+        row = data.json()[0]
+        c.execute("INSERT INTO facebook_link_data (url, normalized_url, click_count, total_count, comment_count, like_count, share_count) VALUES (?,?,?,?,?,?,?);",
+                  (link,
+                   row['normalized_url'],
+                   row['click_count'],
+                   row['total_count'],
+                   row['comment_count'],
+                   row['like_count'],
+                   row['share_count']))
+        db.commit()
+        print ("Inserted into cache: " + str(row))
+        return row
+    else:
+        return { 'normalized_url' : None, 'click_count' : None, 'total_count' : None, 'comment_count' : None, 'like_count' : None, 'share_count' : None }
 
 def fb_data_getter(df, column_name, new_data_column_append):
     total_count = []
@@ -67,12 +70,12 @@ def fb_data_getter(df, column_name, new_data_column_append):
             share_count.append(json_obj['share_count'])
             special.append(0)
         else:
-            total_count.append("")
-            click_count.append('')
-            comment_count.append('')
-            like_count.append('')
-            normalized_url.append('')
-            share_count.append('')
+            total_count.append(None)
+            click_count.append(None)
+            comment_count.append(None)
+            like_count.append(None)
+            normalized_url.append(None)
+            share_count.append(None)
             special.append(1)
 
     df['total_count'+new_data_column_append] = total_count
